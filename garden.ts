@@ -8,9 +8,8 @@ import {
 import { events } from "$sb/plugos-syscall/mod.ts";
 
 
-export async function allLinksQueryProvider({
-    query,
-}: QueryProviderEvent): Promise<any[]> {
+
+async function getAllLinks() {
     const links: any[] = [];
     const knownPages = new Set((await space.listPages()).map(p => p.name));
     for (
@@ -20,52 +19,47 @@ export async function allLinksQueryProvider({
         const to_page_exists = knownPages.has(to_page);
         links.push({ from_page, to_page, from_pos, to_page_exists });
     }
+
+    return links;
+}
+
+export async function allLinksQueryProvider({
+    query,
+}: QueryProviderEvent): Promise<any[]> {
+    const links = await getAllLinks();
     return applyQuery(query, links);
 }
 
 export async function missingPagesQueryProvider({
     query,
 }: QueryProviderEvent): Promise<any[]> {
+    const links = await getAllLinks();
+
+    // filter to just missing, collapsing dupes in a set
     const missing = new Set();
-    const knownPages = new Set((await space.listPages()).map(p => p.name));
-    for (
-        const { value: from_page, key } of await index.queryPrefix(`pl:`)
-    ) {
-        const [, page, from_pos] = key.split(":"); // Key: pl:page:pos
-        if (!knownPages.has(page)) {
-            missing.add(page);
+    for (let link of links) {
+        if (!link.to_page_exists) {
+            missing.add(link.to_page);
         }
     }
 
-    const pages: any[] = [];
+    // produce new data source
+    const missingPageNames: any[] = [];
     for (let name of missing) {
-        pages.push({ name });
+        missingPageNames.push({ name });
     }
 
-    return applyQuery(query, pages);
+    return applyQuery(query, missingPageNames);
 }
 
 
 export async function randomMissing() {
-    let links: Array<Array<any>> = await events.dispatchEvent(
+    let missing: Array<Array<any>> = await events.dispatchEvent(
         'query:allLinks',
-        { query: { table: 'pl', filter: [] } },
+        { query: { table: 'pl', filter: [{ op: '=', prop: "to_page_exists", value: false }] } },
         10 * 1000,
     );
 
-    const linkSet = new Set();
-    for (let link of links[0]) {
-        linkSet.add(link['to_page']);
-    }
-
-    const pageSet = new Set();
-    for (let page of await space.listPages()) {
-        pageSet.add(page['name']);
-    }
-
-    // this will implicitly favor to_pages that have multiple references
-    const missing = [...linkSet].filter(e => !pageSet.has(e));
-
-    const choice = Math.floor(Math.random() * missing.length);
-    await editor.navigate(missing[choice]);
+    const choice = Math.floor(Math.random() * missing[0].length);
+    await editor.navigate(missing[0][choice].to_page);
 }
