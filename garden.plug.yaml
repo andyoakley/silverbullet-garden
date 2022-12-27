@@ -1,0 +1,18 @@
+name: garden
+version: 0.1
+imports:
+  - https://get.silverbullet.md/global.plug.json
+functions:
+
+  randomMissing:
+    path: "./garden.ts:randomMissing"
+    command:
+      name: "Garden: Random missing page"
+  allLinksQueryProvider:
+    path: "./garden.ts:allLinksQueryProvider"
+    events:
+    - query:allLinks
+  missingPagesQueryProvider:
+    path: "./garden.ts:missingPagesQueryProvider"
+    events:
+    - query:missingPages

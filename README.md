@@ -1,7 +1,22 @@
 
-# SilverBullet plug for saying hello to the user
+# SilverBullet plug for knowledge base tending (gardening)
 
-A well behaved plug that will greet your users.
+Provides:
+
+1. A `Garden: Random missing page` command
+2. Query provider `allLinks` about all inter-page links
+3. Query provider `missingPages` for all linked but missing pages
+
+## Examples
+
+Use the query provider to list pages that might need some content
+
+```html
+<!-- #query missingPages  -->
+<!-- /query -->
+```
+
+Or use the Random command to find one to populate today!
 
 ## Wait, SilverBullet?
 
